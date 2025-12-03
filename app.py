@@ -12,11 +12,14 @@ from nltk.stem import PorterStemmer
 ps = PorterStemmer()
 
 # -------------------------------
-# API + LOAD MODELS
+# LOAD API KEY FROM STREAMLIT SECRETS
 # -------------------------------
-API_KEY = "AIzaSyDZG76QziLJZEWMSN23N7_snbkrzUi_scA"
+API_KEY = st.secrets["API_KEY"]
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
+# -------------------------------
+# LOAD MODELS
+# -------------------------------
 clf = joblib.load('clf.pkl')
 xgb = joblib.load('xgb_model.pkl')
 vectorizer = joblib.load('vectorizer.pkl')
@@ -72,7 +75,6 @@ def get_video_details(video_url):
     return details
 
 
-# ⭐ NEW: TOP 5 Comments + Sentiment
 def get_top_comments(video_id, max_comments=5):
     comments = []
 
@@ -91,7 +93,6 @@ def get_top_comments(video_id, max_comments=5):
 
 
 def get_comment_sentiment(video_id, max_comments=30):
-    comments = []
     sentiments = []
 
     response = youtube.commentThreads().list(
@@ -104,7 +105,6 @@ def get_comment_sentiment(video_id, max_comments=30):
     for item in response["items"]:
         text = item["snippet"]["topLevelComment"]["snippet"]["textDisplay"]
         polarity = TextBlob(text).sentiment.polarity
-
         sentiments.append(polarity)
 
     avg_sentiment = np.mean(sentiments) if sentiments else 0
@@ -198,7 +198,6 @@ def predict_video_virality(video_url):
         else:
            final = "❄️ NOT Recommended"
 
-
     return details, sentiment_score, pred_engage, pred_title, final, top_comments
 
 
@@ -214,9 +213,7 @@ if st.button("Predict"):
     try:
         details, sentiment, pred_engage, pred_title, final, top_comments = predict_video_virality(url)
 
-        # ⭐ THUMBNAIL + VIDEO PLAYER
         st.subheader("📺 Video Preview")
-       
         st.video(f"https://www.youtube.com/watch?v={details['video_id']}")
 
         st.subheader("📌 Video Title")
@@ -235,7 +232,6 @@ if st.button("Predict"):
         st.subheader("🔮 Final Recommendation")
         st.success(final)
 
-        # ⭐ TOP 5 COMMENTS SECTION
         st.subheader("💬 Top 5 Comments")
         if top_comments:
             for i, c in enumerate(top_comments, 1):
@@ -245,3 +241,4 @@ if st.button("Predict"):
 
     except Exception as e:
         st.error(f"Error: {str(e)}")
+
